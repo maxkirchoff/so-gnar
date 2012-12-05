@@ -9,6 +9,11 @@ if (! file_exists('conf/conf.php'))
 // REQUIRE!
 $config = include 'conf/conf.php';
 
+// Set our last run success timestamp for 0 so it announces any success results immediatley.
+$last_run_success = 0;
+// Set our last run success timestamp for 0 so it announces any failure results immediatley.
+$last_run_failure = 0;
+
 // DO ETTTT ALWAYS
 while(true)
 {
@@ -19,7 +24,6 @@ while(true)
         foreach ($config['services'] as $service => $service_url)
         {
             $status = API_Thingy::status($service_url);
-
             switch ($status)
             {
                 case 200:
@@ -49,23 +53,44 @@ while(true)
         {
             if (empty($alerts))
             {
-                // We made it without any failures!
-                exec('afplay "' . $config['alert_success'] . '"');
+                if (announcement_threshold($config['alert_frequency'], $last_run_success) || ($last_run_failure > $last_run_success))
+                {
+                    // We made it without any failures!
+                    exec('afplay "' . $config['alert_success'] . '"');
+
+                    if ($last_run_failure > $last_run_success)
+                    {
+                        exec('say "' . $config['alert_restored'] . '"');
+                    }
+
+                    // reset our last run timestamp
+                    $last_run_success = strtotime('now');
+                }
             }
             else
             {
-                // We had failures!
-                exec('afplay "' . $config['alert_failure'] . '"');
-                if(is_array($alerts))
+                if (announcement_threshold($config['alert_frequency'], $last_run_failure) || ($last_run_success > $last_run_failure))
                 {
-                    foreach($alerts as $alert)
+                    // We had failures!
+                    exec('afplay "' . $config['alert_failure'] . '"');
+                    if(is_array($alerts))
                     {
-                        exec('say "' . $alert . '"');
+                        foreach($alerts as $alert)
+                        {
+                            exec('say "' . $alert . '"');
+                        }
                     }
+                    // reset our last run timestamp
+                    $last_run_failure = strtotime('now');
                 }
             }
         }
     }
 
-    sleep($config['frequency']);
+    sleep($config['status_check_frequency']);
+}
+
+function announcement_threshold($interval, $last_run)
+{
+    return ((strtotime('now') - $interval) > $last_run) ? true : false;
 }
