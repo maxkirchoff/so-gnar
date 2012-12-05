@@ -1,4 +1,4 @@
-so-gnar
+SO GNAR!
 =======
 
-pinging all the things
+The gnarliest service status pinger.
