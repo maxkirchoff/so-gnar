@@ -1,9 +1,18 @@
 <?php
 return array(
-    // array of services to watch
-    'services'  => array(
-        '{{service_name}}' => "{{service_url}}",
+    // array of service clusters to watch
+    // Service clusters are endpoints that use the same credentials or are otherwise batched together
+    'service_clusters'  => array(
+        '{{service cluster}}' => array(
+            // Credentials are optional - So Gnar will check for these before alerting on 401 Unauthorized
+            'credentials' => array(
+                'username'  => '{{username}}',
+                'password'  => '{{password}}'
+            ),
+            'endpoints' =>  array(
+            ),
         ),
+    ),
     // how often do you want to ping services for their status
     'status_check_frequency'  =>  '{{status_check_frequency}}',
     // enable alert types

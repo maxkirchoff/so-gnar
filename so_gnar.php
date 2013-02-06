@@ -15,7 +15,7 @@ $last_run = array(
 while(true)
 {
     // We need to have some services configured to do anything... and that should be an array
-    if(isset($config['services']) && is_array($config['services']))
+    if(isset($config['service_clusters']) && is_array($config['service_clusters']))
     {
         // Get any alerts on status --- irregular responses or missing services
         $status_alerts = get_status_alerts();
@@ -135,14 +135,17 @@ function get_formatted_datetime()
  */
 function get_config()
 {
+    // Our supposed conf path
+    $conf_path = 'conf/conf.php';
+
     // CONF
-    if (! file_exists('conf/conf.php'))
+    if (! file_exists($conf_path))
     {
         die("You need a conf.php, bro.");
     }
 
     // load that conf array up and return it!
-    return include 'conf/conf.php';
+    return include $conf_path;
 }
 
 /**
@@ -198,32 +201,45 @@ function get_status_alerts()
     // setup our alerts array
     $alerts = array();
 
+    $api = new API_Thingy();
+
     // loop thourhg our defined services and check status
-    foreach ($config['services'] as $service => $service_url)
+    foreach ($config['service_clusters'] as $service_cluster)
     {
-        $status = API_Thingy::status($service_url);
-        switch ($status)
+        if (isset($service_cluster['credentials']))
         {
-            case 200:
-                break;
-            case 400:
-                // Swallow bad request since we'll get that with non-authed calls
-                break;
-            case 401:
-                // Swallow Unauthorized as we'll get that with non-auth calls
-                break;
-            case 403:
-                $alerts[] = "{$service} is in the forbidden zone.";
-                break;
-            case 404:
-                $alerts[] = "{$service} is not found.";
-                break;
-            case 500:
-                $alerts[] = "{$service} is broken.";
-                break;
-            default:
-                $alerts[] = "{$service} is acting weird.";
-                break;
+            $api->set_credentials($service_cluster['credentials']);
+        }
+
+        foreach ($service_cluster['endpoints'] as $endpoint_name => $endpoint)
+        {
+            $response = $api->status($endpoint);
+            switch ($response['curl_info']['http_code'])
+            {
+                case 200:
+                    break;
+                case 400:
+                    $alerts[] = "{$endpoint_name} thinks you are making a bad request.";
+                    break;
+                case 401:
+                    if (isset($service_cluster['credentials']))
+                    {
+                        $alerts[] = "{$endpoint_name} thinks you have bad credentials.";
+                    }
+                    break;
+                case 403:
+                    $alerts[] = "{$endpoint_name} thinks this is forbidden.";
+                    break;
+                case 404:
+                    $alerts[] = "{$endpoint_name} is not found.";
+                    break;
+                case 500:
+                    $alerts[] = "{$endpoint_name} is broken.";
+                    break;
+                default:
+                    $alerts[] = "{$endpoint_name} is returning an Unknown status code.";
+                    break;
+            }
         }
     }
 
