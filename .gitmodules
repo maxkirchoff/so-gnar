@@ -1,0 +1,3 @@
+[submodule "lib/spyc"]
+	path = lib/spyc
+	url = git://github.com/mustangostang/spyc.git

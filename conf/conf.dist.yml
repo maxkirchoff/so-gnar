@@ -1,0 +1,19 @@
+service_clusters:
+  service:
+    credentials:
+       username:
+       password:
+    endpoints:
+      - name:
+        url:
+status_check_frequency: 10
+alerts:
+  - email
+  - audio
+alert_email:
+  to:
+  subject:
+alert_frequency: 300
+alert_success:
+alert_failure:
+alert_restored:

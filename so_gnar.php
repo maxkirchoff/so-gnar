@@ -1,5 +1,6 @@
 <?php
 require('api_thingy.php');
+require('lib/spyc/Spyc.php');
 
 // Grab our config array
 $config = get_config();
@@ -71,7 +72,7 @@ while(true)
 }
 
 /**
- * determine if the announcement threshold has been met
+ * determine if the alert_facement threshold has been met
  *
  * @param $timestamp
  * @return bool
@@ -136,16 +137,16 @@ function get_formatted_datetime()
 function get_config()
 {
     // Our supposed conf path
-    $conf_path = 'conf/conf.php';
+    $conf_path = 'conf/conf.yml';
 
     // CONF
     if (! file_exists($conf_path))
     {
-        die("You need a conf.php, bro.");
+        die("You need a conf.yml, bro.");
     }
 
     // load that conf array up and return it!
-    return include $conf_path;
+    return Spyc::YAMLLoad($conf_path);
 }
 
 /**
@@ -211,33 +212,33 @@ function get_status_alerts()
             $api->set_credentials($service_cluster['credentials']);
         }
 
-        foreach ($service_cluster['endpoints'] as $endpoint_name => $endpoint)
+        foreach ($service_cluster['endpoints'] as $endpoint)
         {
-            $response = $api->status($endpoint);
+            $response = $api->status($endpoint['url']);
             switch ($response['curl_info']['http_code'])
             {
                 case 200:
                     break;
                 case 400:
-                    $alerts[] = "{$endpoint_name} thinks you are making a bad request.";
+                    $alerts[] = "{$endpoint['name']} thinks you are making a bad request.";
                     break;
                 case 401:
                     if (isset($service_cluster['credentials']))
                     {
-                        $alerts[] = "{$endpoint_name} thinks you have bad credentials.";
+                        $alerts[] = "{$endpoint['name']} thinks you have bad credentials.";
                     }
                     break;
                 case 403:
-                    $alerts[] = "{$endpoint_name} thinks this is forbidden.";
+                    $alerts[] = "{$endpoint['name']} thinks this is forbidden.";
                     break;
                 case 404:
-                    $alerts[] = "{$endpoint_name} is not found.";
+                    $alerts[] = "{$endpoint['name']} is not found.";
                     break;
                 case 500:
-                    $alerts[] = "{$endpoint_name} is broken.";
+                    $alerts[] = "{$endpoint['name']} is broken.";
                     break;
                 default:
-                    $alerts[] = "{$endpoint_name} is returning an Unknown status code.";
+                    $alerts[] = "{$endpoint['name']} is returning an Unknown status code.";
                     break;
             }
         }
